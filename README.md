@@ -41,24 +41,24 @@ fmt.Printf("Machine ID: %d\n", parsed.Discriminator) // 1
 
 ```go
 machineID := uint64(1)
-processID := uint64(os.Getpid())
+processID := uint64(24)
 sf := snowflake.New2(machineID, processID)
 
 id := sf.NextID()
 fmt.Println(id)
-// 1292058526532767744
+// 1292065108376162304
 
 // or
 
 id = snowflake.New2(machineID, processID).NextID()
 fmt.Println(id)
-// 1292058526532767744
+// 1292065108376162304
 ```
 
 4. Parsing a snowflake id with 2 discriminator fields
 
 ```go
-parsed := snowflake.Parse2(1292062458947571712)
+parsed := snowflake.Parse2(1292065108376162304)
 
 fmt.Printf("Timestamp: %d\n", parsed.Timestamp)       // 1640944495572
 fmt.Printf("Sequence: %d\n", parsed.Sequence)         // 0
