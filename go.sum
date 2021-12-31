@@ -1,0 +1,4 @@
+github.com/bwmarrin/snowflake v0.3.0 h1:xm67bEhkKh6ij1790JB83OujPR5CzNe8QuQqAgISZN0=
+github.com/bwmarrin/snowflake v0.3.0/go.mod h1:NdZxfVWX+oR6y2K0o6qAYv6gIOP9rjG0/E9WsDpxqwE=
+github.com/godruoyi/go-snowflake v0.0.1 h1:x4Kb7s5MyZDeHasNbm630gBOggJdl6Fq1JDWGntH/ew=
+github.com/godruoyi/go-snowflake v0.0.1/go.mod h1:6JXMZzmleLpSK9pYpg4LXTcAz54mdYXTeXUvVks17+4=
