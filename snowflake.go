@@ -98,12 +98,17 @@ func (id *ID) NextID() uint64 {
 	return timestampSegment | discriminatorSegment | sequenceSegment
 }
 
+// SID is the parsed representation of a snowflake ID.
 type SID struct {
-	Timestamp     int64
-	Sequence      uint64
+	// Timestamp is the timestamp of the snowflake ID.
+	Timestamp int64
+	// Sequence is the sequence number of the snowflake ID.
+	Sequence uint64
+	// Discriminator is the discriminator value of the snowflake ID.
 	Discriminator uint64
 }
 
+// Parse parses an existing snowflake ID
 func Parse(sid uint64) SID {
 	return SID{
 		Timestamp:     getTimestamp(sid),
@@ -169,13 +174,19 @@ func (id *ID2) NextID() uint64 {
 	return timestampSegment | discriminator2Segment | discriminator1Segment | sequenceSegment
 }
 
+// SID2 is the parsed representation of a snowflake ID with 2 discriminator fields.
 type SID2 struct {
+	// Timestamp is the timestamp of the snowflake ID.
 	Timestamp      int64
+	// Sequence is the sequence number of the snowflake ID.
 	Sequence       uint64
+	// Discriminator1 is the first discriminator value of the snowflake ID.
 	Discriminator1 uint64
+	// Discriminator2 is the second discriminator value of the snowflake ID.
 	Discriminator2 uint64
 }
 
+// Parse2 parses an existing snowflake ID with 2 discriminator fields.
 func Parse2(sid uint64) SID2 {
 	return SID2{
 		Timestamp:      getTimestamp(sid),
