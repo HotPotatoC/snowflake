@@ -1,5 +1,7 @@
 # Snowflake
 
+[![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/gomods/athens.svg)](https://github.com/gomods/athens) [![GoDoc reference example](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/HotPotatoC/go/snowflake) [![GoReportCard example](https://goreportcard.com/badge/github.com/HotPotatoC/snowflake)](https://goreportcard.com/report/github.com/HotPotatoC/snowflake) [![GitHub release](https://img.shields.io/github/release/HotPotatoC/snowflake.svg)](https://GitHub.com/HotPotatoC/snowflake/releases/) [![GitHub license](https://badgen.net/github/license/HotPotatoC/snowflake)](https://github.com/HotPotatoC/snowflake/blob/master/LICENSE)
+
 Dead simple and fast [Twitter's snowflake](https://blog.twitter.com/engineering/en_us/a/2010/announcing-snowflake) id generator in Go.
 
 ## Installation
@@ -85,7 +87,7 @@ PASS
 ok   command-line-arguments 4.230s
 ```
 
-Disclaimer: Benchmark results may be faster than other implementations. But I do not guarantee that this library is the safest snowflake id generator.
+Disclaimer: Benchmark results may be faster than other implementations. But this library has not been fully tested and corner cases may be missed.
 
 ## Support
 
