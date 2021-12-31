@@ -51,7 +51,6 @@ func SetEpoch(e time.Time) error {
 // ID is a custom type for a snowflake ID.
 type ID struct {
 	mtx           sync.Mutex
-	snowflake     uint64
 	discriminator uint64
 	sequence      uint64
 	elapsedTime   int64
@@ -96,9 +95,7 @@ func (id *ID) NextID() uint64 {
 		discriminatorSegment = 0
 	}
 
-	id.snowflake = timestampSegment | uint64(discriminatorSegment) | sequenceSegment
-
-	return id.snowflake
+	return timestampSegment | discriminatorSegment | sequenceSegment
 }
 
 type SID struct {
@@ -118,7 +115,6 @@ func Parse(sid uint64) SID {
 // ID2 is a snowflake ID with 2 discriminator fields.
 type ID2 struct {
 	mtx            sync.Mutex
-	snowflake      uint64
 	discriminator1 uint64
 	discriminator2 uint64
 	sequence       uint64
@@ -170,9 +166,7 @@ func (id *ID2) NextID() uint64 {
 		discriminator2Segment = 0
 	}
 
-	id.snowflake = timestampSegment | discriminator2Segment | discriminator1Segment | sequenceSegment
-
-	return id.snowflake
+	return timestampSegment | discriminator2Segment | discriminator1Segment | sequenceSegment
 }
 
 type SID2 struct {
