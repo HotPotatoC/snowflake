@@ -177,9 +177,9 @@ func (id *ID2) NextID() uint64 {
 // SID2 is the parsed representation of a snowflake ID with 2 discriminator fields.
 type SID2 struct {
 	// Timestamp is the timestamp of the snowflake ID.
-	Timestamp      int64
+	Timestamp int64
 	// Sequence is the sequence number of the snowflake ID.
-	Sequence       uint64
+	Sequence uint64
 	// Discriminator1 is the first discriminator value of the snowflake ID.
 	Discriminator1 uint64
 	// Discriminator2 is the second discriminator value of the snowflake ID.
