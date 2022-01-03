@@ -15,11 +15,6 @@ const (
 )
 
 var (
-	// epoch defaults to March 3, 2012, 00:00:00 UTC. Which is
-	// the release date of Go 1.0.
-	// You can customize it by calling SetEpoch()
-	//	// Example
-	//	err := snowflake.SetEpoch(time.Date(2009, 1, 1, 0, 0, 0, 0, time.UTC))
 	epoch = time.Date(2012, 3, 28, 0, 0, 0, 0, time.UTC)
 
 	// ErrEpochIsZero is returned when the epoch is set to the zero time.
@@ -27,6 +22,14 @@ var (
 	// ErrEpochFuture is returned when the epoch is in the future.
 	ErrEpochFuture = errors.New("epoch is in the future")
 )
+
+// Epoch returns the current configured epoch.
+// epoch defaults to March 3, 2012, 00:00:00 UTC. Which is
+// the release date of Go 1.0.
+// You can customize it by calling SetEpoch()
+//	// Example setting the epoch to 2010-01-01 00:00:00 UTC
+//	err := snowflake.SetEpoch(time.Date(2010, 1, 1, 0, 0, 0, 0, time.UTC))
+func Epoch() time.Time { return epoch }
 
 // SetEpoch changes the epoch / starting time to a custom time.
 // Can return 2 errors: ErrEpochIsZero and ErrEpochFuture.
@@ -54,11 +57,12 @@ type ID struct {
 	discriminator uint64
 	sequence      uint64
 	elapsedTime   int64
+	lastID        uint64
 }
 
 // New returns a new snowflake.ID (max discriminator value: 1023)
 func New(discriminator uint64) *ID {
-	return &ID{discriminator: discriminator}
+	return &ID{discriminator: discriminator, lastID: 0}
 }
 
 // NextID returns a new snowflake ID.
@@ -70,23 +74,24 @@ func (id *ID) NextID() uint64 {
 	id.mtx.Lock()
 	defer id.mtx.Unlock()
 
-	nowSinceEpoch := time.Since(epoch).Nanoseconds() / int64(time.Millisecond)
+	nowSinceEpoch := msSinceEpoch()
 
-	// If this is the first call to NextID(), initialize the elapsedTime
-	// and set sequence to zero.
-	if id.elapsedTime < nowSinceEpoch {
-		id.elapsedTime = nowSinceEpoch
-		id.sequence = 0
-	} else { // Otherwise, increment the sequence number.
-		id.sequence = (id.sequence + 1) & maxSeqBits
-		// if we've used up all the bits in the sequence number,
-		// we need to increment the timestamp
+	// reference: https://github.com/twitter-archive/snowflake/blob/snowflake-2010/src/main/scala/com/twitter/service/snowflake/IdWorker.scala#L81
+	if nowSinceEpoch == id.elapsedTime { // same millisecond as last time
+		id.sequence = (id.sequence + 1) & maxSeqBits // increment sequence number
+
 		if id.sequence == 0 {
-			id.elapsedTime++
+			// if we've used up all the bits in the sequence number,
+			// we need to change the timestamp
+			nowSinceEpoch = waitUntilNextMs(id.elapsedTime) // wait until next millisecond
 		}
+	} else {
+		id.sequence = 0
 	}
 
-	timestampSegment := uint64(nowSinceEpoch << (sequenceBits + discriminatorBits))
+	id.elapsedTime = nowSinceEpoch
+
+	timestampSegment := uint64(id.elapsedTime << (sequenceBits + discriminatorBits))
 	discriminatorSegment := uint64(id.discriminator) << sequenceBits
 	sequenceSegment := uint64(id.sequence)
 
@@ -141,23 +146,24 @@ func (id *ID2) NextID() uint64 {
 	id.mtx.Lock()
 	defer id.mtx.Unlock()
 
-	nowSinceEpoch := time.Since(epoch).Nanoseconds() / int64(time.Millisecond)
+	nowSinceEpoch := msSinceEpoch()
 
-	// If this is the first call to NextID(), initialize the elapsedTime
-	// and set sequence to zero.
-	if id.elapsedTime < nowSinceEpoch {
-		id.elapsedTime = nowSinceEpoch
-		id.sequence = 0
-	} else { // Otherwise, increment the sequence number.
-		id.sequence = (id.sequence + 1) & maxSeqBits
-		// if we've used up all the bits in the sequence number,
-		// we need to increment the timestamp
+	// reference: https://github.com/twitter-archive/snowflake/blob/snowflake-2010/src/main/scala/com/twitter/service/snowflake/IdWorker.scala#L81
+	if nowSinceEpoch == id.elapsedTime { // same millisecond as last time
+		id.sequence = (id.sequence + 1) & maxSeqBits // increment sequence number
+
 		if id.sequence == 0 {
-			id.elapsedTime++
+			// if we've used up all the bits in the sequence number,
+			// we need to change the timestamp
+			nowSinceEpoch = waitUntilNextMs(id.elapsedTime) // wait until next millisecond
 		}
+	} else {
+		id.sequence = 0
 	}
 
-	timestampSegment := uint64(nowSinceEpoch << (sequenceBits + discriminatorBits))
+	id.elapsedTime = nowSinceEpoch
+
+	timestampSegment := uint64(id.elapsedTime << (sequenceBits + discriminatorBits))
 	discriminator1Segment := id.discriminator1 << uint64(sequenceBits)
 	discriminator2Segment := id.discriminator2 << uint64(sequenceBits+discriminatorBits/2)
 	sequenceSegment := uint64(id.sequence)
@@ -196,6 +202,20 @@ func Parse2(sid uint64) SID2 {
 	}
 }
 
+// waitUntilNextMs waits until the next millisecond to return. (internal-use only)
+func waitUntilNextMs(last int64) int64 {
+	ms := msSinceEpoch()
+	for ms <= last {
+		ms = msSinceEpoch()
+	}
+	return ms
+}
+
+// msSinceEpoch returns the number of milliseconds since the epoch. (internal-use only)
+func msSinceEpoch() int64 {
+	return time.Since(epoch).Nanoseconds() / 1e6
+}
+
 // getDiscriminant returns the discriminant value of a snowflake ID. (internal-use only)
 func getDiscriminant(id uint64) uint64 {
 	return (id >> sequenceBits) & maxDiscriminatorBits
@@ -213,8 +233,7 @@ func getSecondDiscriminant(id uint64) uint64 {
 
 // getTimestamp returns the timestamp of a snowflake ID. (internal-use only)
 func getTimestamp(id uint64) int64 {
-	shift := sequenceBits + discriminatorBits
-	return int64(id>>shift) + epoch.UnixNano()/int64(time.Millisecond)
+	return int64(id>>(sequenceBits+discriminatorBits)) + epoch.UnixNano()/1e6
 }
 
 // getSequence returns the sequence number of a snowflake ID. (internal-use only)

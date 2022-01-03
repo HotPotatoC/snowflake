@@ -1,11 +1,134 @@
 package snowflake_test
 
 import (
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/HotPotatoC/snowflake"
 )
+
+func TestNextID(t *testing.T) {
+	n := 100000
+	sf := snowflake.New(1)
+	ids := make(map[uint64]bool)
+	for i := 0; i < n; i++ {
+		id := sf.NextID()
+		if _, exists := ids[id]; exists {
+			t.Errorf("expected to be unique, but got a repeated ID (%d)", id)
+			break
+		}
+
+		ids[id] = true
+	}
+}
+
+func TestNextID_Concurrent(t *testing.T) {
+	n := 100000
+	ch := make(chan uint64, n)
+	sf := snowflake.New(1)
+
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			id := sf.NextID()
+			ch <- id
+		}()
+	}
+	wg.Wait()
+	close(ch)
+
+	ids := make(map[uint64]bool)
+	for id := range ch {
+		if _, ok := ids[id]; ok {
+			t.Error("expected to be unique, but got a repeated ID")
+			break
+		}
+		ids[id] = true
+	}
+	if len(ids) != n {
+		t.Errorf("expected map length %d got %d", n, len(ids))
+	}
+}
+
+func TestNextID2(t *testing.T) {
+	n := 100000
+	sf := snowflake.New2(1, 1)
+	ids := make(map[uint64]bool)
+	for i := 0; i < n; i++ {
+		id := sf.NextID()
+		if _, exists := ids[id]; exists {
+			t.Error("expected to be unique, but got a repeated ID")
+			break
+		}
+
+		ids[id] = true
+	}
+}
+
+func TestNextID2_Concurrent(t *testing.T) {
+	n := 100000
+	ch := make(chan uint64, n)
+	sf := snowflake.New2(1, 1)
+
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			id := sf.NextID()
+			ch <- id
+		}()
+	}
+	wg.Wait()
+	close(ch)
+
+	ids := make(map[uint64]bool)
+	for id := range ch {
+		if _, ok := ids[id]; ok {
+			t.Error("expected to be unique, but got a repeated ID")
+			break
+		}
+		ids[id] = true
+	}
+	if len(ids) != n {
+		t.Errorf("expected map length %d got %d", n, len(ids))
+	}
+}
+
+func TestID_IsIncreasing(t *testing.T) {
+	sf := snowflake.New(1)
+	n := 100000
+	ids := make([]uint64, n)
+	for i := 0; i < n; i++ {
+		ids = append(ids, sf.NextID())
+	}
+
+	for i := 0; i < n; i++ {
+		if i > 0 && ids[i] < ids[i-1] {
+			t.Errorf("expected to be increasing, but got %d at %d", ids[i], i)
+			break
+		}
+	}
+}
+
+func TestID2_IsIncreasing(t *testing.T) {
+	sf := snowflake.New2(1, 2)
+	n := 100000
+	ids := make([]uint64, n)
+	for i := 0; i < n; i++ {
+		ids = append(ids, sf.NextID())
+	}
+
+	for i := 0; i < n; i++ {
+		if i > 0 && ids[i] < ids[i-1] {
+			t.Errorf("expected to be increasing, but got %d at %d", ids[i], i)
+			break
+		}
+	}
+}
 
 func TestSequence(t *testing.T) {
 	sf := snowflake.New(1)
@@ -104,6 +227,87 @@ func Test2Discriminators(t *testing.T) {
 			}
 			if parsed.Discriminator2 != secondDiscriminator {
 				t.Errorf("expected 2nd discriminator %d got %d", secondDiscriminator, parsed.Discriminator2)
+			}
+		})
+	}
+}
+
+func TestParse(t *testing.T) {
+	// timestamp: 1640942460724
+	// Discriminator: 1
+	// Sequence: 0
+	id := uint64(1292053924173320192)
+
+	sid := snowflake.Parse(id)
+	if sid.Sequence != 0 {
+		t.Errorf("expected sequence %d got %d", 0, sid.Sequence)
+	}
+
+	if sid.Discriminator != 1 {
+		t.Errorf("expected discriminator %d got %d", 1, sid.Discriminator)
+	}
+
+	if sid.Timestamp != 1640942460724 {
+		t.Errorf("expected timestamp %d got %d", 1640942460724, sid.Timestamp)
+	}
+}
+
+func TestParse2Fields(t *testing.T) {
+	// timestamp: 1640945127245
+	// Discriminator1: 1
+	// Discriminator2: 24
+	// Sequence: 0
+	id := uint64(1292065108376162304)
+
+	sid := snowflake.Parse2(id)
+	if sid.Sequence != 0 {
+		t.Errorf("expected sequence %d got %d", 0, sid.Sequence)
+	}
+
+	if sid.Discriminator1 != 1 {
+		t.Errorf("expected discriminator %d got %d", 1, sid.Discriminator1)
+	}
+
+	if sid.Discriminator2 != 24 {
+		t.Errorf("expected discriminator %d got %d", 24, sid.Discriminator1)
+	}
+
+	if sid.Timestamp != 1640945127245 {
+		t.Errorf("expected timestamp %d got %d", 1640945127245, sid.Timestamp)
+	}
+}
+
+func TestEpoch(t *testing.T) {
+	epoch := time.Date(2012, 3, 28, 0, 0, 0, 0, time.UTC)
+
+	if snowflake.Epoch() != epoch {
+		t.Errorf("expected epoch %s got %s", epoch, snowflake.Epoch())
+	}
+}
+
+func TestSetEpoch(t *testing.T) {
+	defaultEpoch := time.Date(2012, 3, 28, 0, 0, 0, 0, time.UTC)
+	tc := []struct {
+		name     string
+		epoch    time.Time
+		expected time.Time
+		err      error
+	}{
+		{"Should return ErrEpochIsZero", time.Time{}, defaultEpoch, snowflake.ErrEpochIsZero},
+		{"Should return ErrEpochFuture", time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC), defaultEpoch, snowflake.ErrEpochFuture},
+		{"2010-1-1 00:00:00", time.Date(2010, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2010, 1, 1, 0, 0, 0, 0, time.UTC), nil},
+	}
+
+	for _, tt := range tc {
+		t.Run(tt.name, func(t *testing.T) {
+			err := snowflake.SetEpoch(tt.epoch)
+
+			if snowflake.Epoch() != tt.expected {
+				t.Errorf("expected epoch %s got %s", tt.expected, snowflake.Epoch())
+			}
+
+			if err != tt.err {
+				t.Errorf("expected error %v got %v", tt.err, err)
 			}
 		})
 	}
