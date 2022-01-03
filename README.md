@@ -21,12 +21,6 @@ sf := snowflake.New(machineID)
 id := sf.NextID()
 fmt.Println(id)
 // 1292053924173320192
-
-// or
-
-id = snowflake.New(machineID).NextID()
-fmt.Println(id)
-// 1292053924173320192
 ```
 
 2. Parsing a snowflake id
@@ -47,12 +41,6 @@ processID := uint64(24)
 sf := snowflake.New2(machineID, processID)
 
 id := sf.NextID()
-fmt.Println(id)
-// 1292065108376162304
-
-// or
-
-id = snowflake.New2(machineID, processID).NextID()
 fmt.Println(id)
 // 1292065108376162304
 ```
