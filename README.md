@@ -30,10 +30,10 @@ parsed := snowflake.Parse(1292053924173320192)
 
 fmt.Printf("Timestamp: %d\n", parsed.Timestamp)      // 1640942460724
 fmt.Printf("Sequence: %d\n", parsed.Sequence)        // 0
-fmt.Printf("Machine ID: %d\n", parsed.Discriminator) // 1
+fmt.Printf("Machine ID: %d\n", parsed.Field) // 1
 ```
 
-3. Generating a snowflake ID with 2 discriminator fields
+3. Generating a snowflake ID with 2 field fields
 
 ```go
 machineID := uint64(1)
@@ -45,15 +45,15 @@ fmt.Println(id)
 // 1292065108376162304
 ```
 
-4. Parsing a snowflake id with 2 discriminator fields
+4. Parsing a snowflake id with 2 field fields
 
 ```go
 parsed := snowflake.Parse2(1292065108376162304)
 
 fmt.Printf("Timestamp: %d\n", parsed.Timestamp)       // 1640944495572
 fmt.Printf("Sequence: %d\n", parsed.Sequence)         // 0
-fmt.Printf("Machine ID: %d\n", parsed.Discriminator1) // 1
-fmt.Printf("Process ID: %d\n", parsed.Discriminator2) // 24
+fmt.Printf("Machine ID: %d\n", parsed.Field1) // 1
+fmt.Printf("Process ID: %d\n", parsed.Field2) // 24
 ```
 
 ## Support

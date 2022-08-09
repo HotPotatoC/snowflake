@@ -182,7 +182,7 @@ func TestSequence2(t *testing.T) {
 	}
 }
 
-func TestDiscriminator(t *testing.T) {
+func TestField(t *testing.T) {
 	tc := []struct {
 		name     string
 		sf       *snowflake.ID
@@ -197,15 +197,15 @@ func TestDiscriminator(t *testing.T) {
 
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
-			if snowflake.Parse(tt.sf.NextID()).Discriminator != tt.expected {
-				t.Errorf("expected discriminator %d got %d",
-					tt.expected, snowflake.Parse(tt.sf.NextID()).Discriminator)
+			if snowflake.Parse(tt.sf.NextID()).Field != tt.expected {
+				t.Errorf("expected field %d got %d",
+					tt.expected, snowflake.Parse(tt.sf.NextID()).Field)
 			}
 		})
 	}
 }
 
-func Test2Discriminators(t *testing.T) {
+func Test2Fields(t *testing.T) {
 	tc := []struct {
 		name     string
 		sf       *snowflake.ID2
@@ -219,14 +219,14 @@ func Test2Discriminators(t *testing.T) {
 
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
-			firstDiscriminator, secondDiscriminator := tt.expected[0], tt.expected[1]
+			firstField, secondField := tt.expected[0], tt.expected[1]
 			parsed := snowflake.Parse2(tt.sf.NextID())
-			if parsed.Discriminator1 != firstDiscriminator {
-				t.Errorf("expected discriminator %d got %d",
-					tt.expected, parsed.Discriminator1)
+			if parsed.Field1 != firstField {
+				t.Errorf("expected field %d got %d",
+					tt.expected, parsed.Field1)
 			}
-			if parsed.Discriminator2 != secondDiscriminator {
-				t.Errorf("expected 2nd discriminator %d got %d", secondDiscriminator, parsed.Discriminator2)
+			if parsed.Field2 != secondField {
+				t.Errorf("expected 2nd field %d got %d", secondField, parsed.Field2)
 			}
 		})
 	}
@@ -234,7 +234,7 @@ func Test2Discriminators(t *testing.T) {
 
 func TestParse(t *testing.T) {
 	// timestamp: 1640942460724
-	// Discriminator: 1
+	// Field: 1
 	// Sequence: 0
 	id := uint64(1292053924173320192)
 
@@ -243,8 +243,8 @@ func TestParse(t *testing.T) {
 		t.Errorf("expected sequence %d got %d", 0, sid.Sequence)
 	}
 
-	if sid.Discriminator != 1 {
-		t.Errorf("expected discriminator %d got %d", 1, sid.Discriminator)
+	if sid.Field != 1 {
+		t.Errorf("expected field %d got %d", 1, sid.Field)
 	}
 
 	if sid.Timestamp != 1640942460724 {
@@ -254,8 +254,8 @@ func TestParse(t *testing.T) {
 
 func TestParse2Fields(t *testing.T) {
 	// timestamp: 1640945127245
-	// Discriminator1: 1
-	// Discriminator2: 24
+	// Field1: 1
+	// Field2: 24
 	// Sequence: 0
 	id := uint64(1292065108376162304)
 
@@ -264,12 +264,12 @@ func TestParse2Fields(t *testing.T) {
 		t.Errorf("expected sequence %d got %d", 0, sid.Sequence)
 	}
 
-	if sid.Discriminator1 != 1 {
-		t.Errorf("expected discriminator %d got %d", 1, sid.Discriminator1)
+	if sid.Field1 != 1 {
+		t.Errorf("expected field %d got %d", 1, sid.Field1)
 	}
 
-	if sid.Discriminator2 != 24 {
-		t.Errorf("expected discriminator %d got %d", 24, sid.Discriminator1)
+	if sid.Field2 != 24 {
+		t.Errorf("expected field %d got %d", 24, sid.Field1)
 	}
 
 	if sid.Timestamp != 1640945127245 {

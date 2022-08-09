@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	discriminatorBits        = 10
+	fieldBits        = 10
 	sequenceBits             = 12
-	maxDiscriminatorBits     = 0x3FF // 0x3FF shorthand for (1 << discriminatorBits) - 1 or 1023
-	maxDiscriminatorHalfBits = 0x1F  // 0x1F shorthand for (1 << (discriminatorBits / 2)) - 1 or 31
+	maxFieldBits     = 0x3FF // 0x3FF shorthand for (1 << fieldBits) - 1 or 1023
+	maxFieldHalfBits = 0x1F  // 0x1F shorthand for (1 << (fieldBits / 2)) - 1 or 31
 	maxSeqBits               = 0xFFF // 0xFFF shorthand for (1 << sequenceBits) - 1 or 4095
 )
 
@@ -54,15 +54,15 @@ func SetEpoch(e time.Time) error {
 // ID is a custom type for a snowflake ID.
 type ID struct {
 	mtx           sync.Mutex
-	discriminator uint64
+	field uint64
 	sequence      uint64
 	elapsedTime   int64
 	lastID        uint64
 }
 
-// New returns a new snowflake.ID (max discriminator value: 1023)
-func New(discriminator uint64) *ID {
-	return &ID{discriminator: discriminator, lastID: 0}
+// New returns a new snowflake.ID (max field value: 1023)
+func New(field uint64) *ID {
+	return &ID{field: field, lastID: 0}
 }
 
 // NextID returns a new snowflake ID.
@@ -91,16 +91,16 @@ func (id *ID) NextID() uint64 {
 
 	id.elapsedTime = nowSinceEpoch
 
-	timestampSegment := uint64(id.elapsedTime << (sequenceBits + discriminatorBits))
-	discriminatorSegment := uint64(id.discriminator) << sequenceBits
+	timestampSegment := uint64(id.elapsedTime << (sequenceBits + fieldBits))
+	fieldSegment := uint64(id.field) << sequenceBits
 	sequenceSegment := uint64(id.sequence)
 
-	// if the discriminator is bigger than the max, we need to reset it
-	if id.discriminator > maxDiscriminatorBits {
-		discriminatorSegment = 0
+	// if the field is bigger than the max, we need to reset it
+	if id.field > maxFieldBits {
+		fieldSegment = 0
 	}
 
-	return timestampSegment | discriminatorSegment | sequenceSegment
+	return timestampSegment | fieldSegment | sequenceSegment
 }
 
 // SID is the parsed representation of a snowflake ID.
@@ -109,8 +109,8 @@ type SID struct {
 	Timestamp int64
 	// Sequence is the sequence number of the snowflake ID.
 	Sequence uint64
-	// Discriminator is the discriminator value of the snowflake ID.
-	Discriminator uint64
+	// Field is the field value of the snowflake ID.
+	Field uint64
 }
 
 // Parse parses an existing snowflake ID
@@ -118,26 +118,26 @@ func Parse(sid uint64) SID {
 	return SID{
 		Timestamp:     getTimestamp(sid),
 		Sequence:      getSequence(sid),
-		Discriminator: getDiscriminant(sid),
+		Field: getDiscriminant(sid),
 	}
 }
 
-// ID2 is a snowflake ID with 2 discriminator fields.
+// ID2 is a snowflake ID with 2 field fields.
 type ID2 struct {
 	mtx            sync.Mutex
-	discriminator1 uint64
-	discriminator2 uint64
+	field1 uint64
+	field2 uint64
 	sequence       uint64
 	elapsedTime    int64
 }
 
-// New2 returns a new snowflake.ID2 (max discriminator value: 31)
-func New2(discriminator1 uint64, discriminator2 uint64) *ID2 {
-	return &ID2{discriminator1: discriminator1, discriminator2: discriminator2}
+// New2 returns a new snowflake.ID2 (max field value: 31)
+func New2(field1 uint64, field2 uint64) *ID2 {
+	return &ID2{field1: field1, field2: field2}
 }
 
-// NextID returns a new snowflake ID with 2 discriminator fields.
-// The discriminator fields are split into 5 bits each. (max discriminator each: 31)
+// NextID returns a new snowflake ID with 2 field fields.
+// The field fields are split into 5 bits each. (max field each: 31)
 //
 //	Format:
 //	1011001001101101011001010111100000001011111111111000000000001
@@ -163,42 +163,42 @@ func (id *ID2) NextID() uint64 {
 
 	id.elapsedTime = nowSinceEpoch
 
-	timestampSegment := uint64(id.elapsedTime << (sequenceBits + discriminatorBits))
-	discriminator1Segment := id.discriminator1 << uint64(sequenceBits)
-	discriminator2Segment := id.discriminator2 << uint64(sequenceBits+discriminatorBits/2)
+	timestampSegment := uint64(id.elapsedTime << (sequenceBits + fieldBits))
+	field1Segment := id.field1 << uint64(sequenceBits)
+	field2Segment := id.field2 << uint64(sequenceBits+fieldBits/2)
 	sequenceSegment := uint64(id.sequence)
 
-	// if the discriminator is bigger than the max, we need to reset it
-	if id.discriminator1 > uint64(maxDiscriminatorHalfBits) {
-		discriminator1Segment = 0
+	// if the field is bigger than the max, we need to reset it
+	if id.field1 > uint64(maxFieldHalfBits) {
+		field1Segment = 0
 	}
 
-	if id.discriminator2 > uint64(maxDiscriminatorHalfBits) {
-		discriminator2Segment = 0
+	if id.field2 > uint64(maxFieldHalfBits) {
+		field2Segment = 0
 	}
 
-	return timestampSegment | discriminator2Segment | discriminator1Segment | sequenceSegment
+	return timestampSegment | field2Segment | field1Segment | sequenceSegment
 }
 
-// SID2 is the parsed representation of a snowflake ID with 2 discriminator fields.
+// SID2 is the parsed representation of a snowflake ID with 2 field fields.
 type SID2 struct {
 	// Timestamp is the timestamp of the snowflake ID.
 	Timestamp int64
 	// Sequence is the sequence number of the snowflake ID.
 	Sequence uint64
-	// Discriminator1 is the first discriminator value of the snowflake ID.
-	Discriminator1 uint64
-	// Discriminator2 is the second discriminator value of the snowflake ID.
-	Discriminator2 uint64
+	// Field1 is the first field value of the snowflake ID.
+	Field1 uint64
+	// Field2 is the second field value of the snowflake ID.
+	Field2 uint64
 }
 
-// Parse2 parses an existing snowflake ID with 2 discriminator fields.
+// Parse2 parses an existing snowflake ID with 2 field fields.
 func Parse2(sid uint64) SID2 {
 	return SID2{
 		Timestamp:      getTimestamp(sid),
 		Sequence:       getSequence(sid),
-		Discriminator1: getFirstDiscriminant(sid),
-		Discriminator2: getSecondDiscriminant(sid),
+		Field1: getFirstDiscriminant(sid),
+		Field2: getSecondDiscriminant(sid),
 	}
 }
 
@@ -218,22 +218,22 @@ func msSinceEpoch() int64 {
 
 // getDiscriminant returns the discriminant value of a snowflake ID. (internal-use only)
 func getDiscriminant(id uint64) uint64 {
-	return (id >> sequenceBits) & maxDiscriminatorBits
+	return (id >> sequenceBits) & maxFieldBits
 }
 
 // getFirstDiscriminant returns the first discriminant value of a snowflake ID. (internal-use only)
 func getFirstDiscriminant(id uint64) uint64 {
-	return (id >> sequenceBits) & maxDiscriminatorHalfBits
+	return (id >> sequenceBits) & maxFieldHalfBits
 }
 
 // getSecondDiscriminant returns the second discriminant value of a snowflake ID. (internal-use only)
 func getSecondDiscriminant(id uint64) uint64 {
-	return (id >> (sequenceBits + discriminatorBits/2)) & maxDiscriminatorHalfBits
+	return (id >> (sequenceBits + fieldBits/2)) & maxFieldHalfBits
 }
 
 // getTimestamp returns the timestamp of a snowflake ID. (internal-use only)
 func getTimestamp(id uint64) int64 {
-	return int64(id>>(sequenceBits+discriminatorBits)) + epoch.UnixNano()/1e6
+	return int64(id>>(sequenceBits+fieldBits)) + epoch.UnixNano()/1e6
 }
 
 // getSequence returns the sequence number of a snowflake ID. (internal-use only)
