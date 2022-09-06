@@ -8,10 +8,10 @@ import (
 
 const (
 	fieldBits        = 10
-	sequenceBits             = 12
+	sequenceBits     = 12
 	maxFieldBits     = 0x3FF // 0x3FF shorthand for (1 << fieldBits) - 1 or 1023
 	maxFieldHalfBits = 0x1F  // 0x1F shorthand for (1 << (fieldBits / 2)) - 1 or 31
-	maxSeqBits               = 0xFFF // 0xFFF shorthand for (1 << sequenceBits) - 1 or 4095
+	maxSeqBits       = 0xFFF // 0xFFF shorthand for (1 << sequenceBits) - 1 or 4095
 )
 
 var (
@@ -27,6 +27,7 @@ var (
 // epoch defaults to March 3, 2012, 00:00:00 UTC. Which is
 // the release date of Go 1.0.
 // You can customize it by calling SetEpoch()
+//
 //	// Example setting the epoch to 2010-01-01 00:00:00 UTC
 //	err := snowflake.SetEpoch(time.Date(2010, 1, 1, 0, 0, 0, 0, time.UTC))
 func Epoch() time.Time { return epoch }
@@ -53,11 +54,11 @@ func SetEpoch(e time.Time) error {
 
 // ID is a custom type for a snowflake ID.
 type ID struct {
-	mtx           sync.Mutex
-	field uint64
-	sequence      uint64
-	elapsedTime   int64
-	lastID        uint64
+	mtx         sync.Mutex
+	field       uint64
+	sequence    uint64
+	elapsedTime int64
+	lastID      uint64
 }
 
 // New returns a new snowflake.ID (max field value: 1023)
@@ -116,19 +117,19 @@ type SID struct {
 // Parse parses an existing snowflake ID
 func Parse(sid uint64) SID {
 	return SID{
-		Timestamp:     getTimestamp(sid),
-		Sequence:      getSequence(sid),
-		Field: getDiscriminant(sid),
+		Timestamp: getTimestamp(sid),
+		Sequence:  getSequence(sid),
+		Field:     getDiscriminant(sid),
 	}
 }
 
 // ID2 is a snowflake ID with 2 field fields.
 type ID2 struct {
-	mtx            sync.Mutex
-	field1 uint64
-	field2 uint64
-	sequence       uint64
-	elapsedTime    int64
+	mtx         sync.Mutex
+	field1      uint64
+	field2      uint64
+	sequence    uint64
+	elapsedTime int64
 }
 
 // New2 returns a new snowflake.ID2 (max field value: 31)
@@ -195,10 +196,10 @@ type SID2 struct {
 // Parse2 parses an existing snowflake ID with 2 field fields.
 func Parse2(sid uint64) SID2 {
 	return SID2{
-		Timestamp:      getTimestamp(sid),
-		Sequence:       getSequence(sid),
-		Field1: getFirstDiscriminant(sid),
-		Field2: getSecondDiscriminant(sid),
+		Timestamp: getTimestamp(sid),
+		Sequence:  getSequence(sid),
+		Field1:    getFirstDiscriminant(sid),
+		Field2:    getSecondDiscriminant(sid),
 	}
 }
 
